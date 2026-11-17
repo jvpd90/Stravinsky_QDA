@@ -1,0 +1,180 @@
+QDA - RULES FOR IMPORTING AN EXCEL EXPORT
+=========================================
+
+Menu: Codificação > Codebook panel > Excel button (also in the File menu):
+  - Export Fragments to Excel
+  - Update Fragments from Excel (by Fragment ID)  -> sections 1 to 5
+  - Append New Fragments from Excel (rows without ID)  -> section 6
+
+The import is meant for a round trip: export the fragments to Excel, edit
+the workbook, and import it back into THE SAME PROJECT.
+
+WHO IS THE RULE
+- The project is the rule for the fragments and their text.
+- The WORKBOOK is the rule for the codification it contains: the level
+  hierarchy in the "Levels" sheet, and each fragment's codes, memo and
+  attributes in the "Fragments" sheet. The import makes the project
+  match the workbook -- it does not merge two versions.
+
+
+1. THE WORKBOOK LAYOUT
+----------------------
+Sheet "Fragments", ONE ROW PER FRAGMENT:
+
+  Fragment ID | Document | <codification columns> | Fragment Text | Memo | <attribute columns>
+
+- Fragment ID, Document: always the first two columns. The Fragment ID
+  links the row to the fragment in the project -- don't change it.
+- Codification columns: one per codification level of the project,
+  headed with the level's name exactly as in the project (e.g. Theme,
+  Issue, Code, Function). Each cell lists the fragment's labels on that
+  level, ONE PER LINE (Alt+Enter for a new line inside a cell). Each
+  line is taken whole -- a name may contain commas, slashes or brackets,
+  e.g. "Diagnosis / attribution of causes" -- and only the spaces around
+  it are trimmed. On a single line, existing labels may also be separated
+  by commas ("a1, a2"); text that isn't an existing label stays whole
+  as one new label.
+- Fragment Text: for reading only (see section 3).
+- Memo: the fragment's memo.
+- Attribute columns: any other column (e.g. "Note", "Sentiment").
+
+Sheet "Levels": the list of codification levels and their parent level
+(Level | Parent Level). It tells the import which columns are
+codifications, and it is the rule for the hierarchy: each listed level
+gets the parent written there (empty = independent), and the levels are
+put in the order of the sheet. Levels not listed are left as they are.
+
+Column order after Fragment ID and Document doesn't matter.
+
+
+2. WHAT YOU CAN DO IN THE WORKBOOK
+----------------------------------
+ADD A CODE to a fragment
+    Add the label on a new line in the cell of its level. A label
+    that doesn't exist yet is created in that level -- under the label
+    given in the parent level's cell, when that cell has exactly one.
+
+REMOVE A CODE from a fragment
+    Delete it from its cell. Note: a parent label stays while one of its
+    children is still listed (if Issue still says "a1", Theme keeps
+    "Theme A" even when the Theme cell is empty).
+
+MOVE A CODE TO ANOTHER PARENT
+    Write the new parent in the parent level's cell: Theme "Theme B",
+    Issue "a1" puts the fragment on "Theme B > a1", even if a1 was under
+    Theme A before. If "a1" doesn't exist under Theme B it is created
+    there, with the color and description of the existing a1. The old
+    "Theme A > a1" stays in the codebook for the fragments that still
+    use it (delete it in the app if no longer needed).
+
+CHANGE THE LEVEL HIERARCHY
+    In the "Levels" sheet, change a level's Parent Level (or empty it to
+    make the level independent), or reorder the rows. The labels of a
+    level whose parent changes are placed under the parent labels that
+    each fragment's row gives; labels used by no fragment are left
+    without a parent.
+
+ADD A NEW CODIFICATION (a new level)
+    1. Add a column headed with the new level's name (e.g. "Stance") and
+       fill in the labels per fragment.
+    2. In the "Levels" sheet, add a row: Stance | <parent level, or
+       empty if it is independent>.
+    Without step 2 the column is read as an attribute, not a codification.
+    (Shortcut for an independent level: head the column "Level: Stance".)
+
+EDIT A MEMO
+    Change the Memo cell. Emptying it deletes the memo.
+
+ADD OR EDIT AN ATTRIBUTE
+    Add a column with any header not used above, or edit its cells. The
+    attribute shows on the validation cards. Emptying a cell clears that
+    value.
+
+DELETE A FRAGMENT
+    Delete its row. The fragment, its code links and its memo are
+    removed. The document text is not touched.
+
+A column you delete from the workbook is left as it is in the project
+(deleting the "Function" column does NOT remove the Function codes).
+
+
+3. WHAT THE IMPORT DOES NOT DO
+------------------------------
+- It does not create fragments or documents. Rows with a blank or
+  unknown Fragment ID are skipped (and listed in the import log).
+  To add rows without an ID as new fragments, use "Append New
+  Fragments" (section 6).
+- It does not change fragment text. Edits to the "Fragment Text" or
+  "Document" cells are ignored; the project's text is kept. Ignored
+  text edits are counted and written in the import log.
+- If two rows have the same Fragment ID they are combined: their labels
+  are joined, and for memo and attributes the first filled cell wins.
+
+
+4. SAFEGUARDS
+-------------
+- The import is first tried on a copy of the project. If it would
+  remove anything (fragments, codes, memos or attribute values) or
+  restructure the codification (level hierarchy, labels moved to another
+  parent), the app shows the counts and asks for confirmation.
+  Answering "No" cancels the import and leaves the project unchanged.
+- If the "Levels" sheet is inconsistent (a parent level that doesn't
+  exist, or a level that would depend on itself), the import stops with
+  an error and nothing is changed.
+- If none of the workbook's Fragment IDs belong to the open project
+  (a workbook from another project), the import stops with an error.
+
+ATTENTION: fragments coded in the app AFTER the export are not in the
+workbook, so importing that older workbook DELETES them, and codes or
+memos changed in the app after the export are set back to what the
+workbook says. If you kept working in the app, export again before
+editing in Excel.
+
+
+5. OLDER WORKBOOKS ("Document | Code | Fragment Text" first)
+------------------------------------------------------------
+Exports made before this layout had one row per fragment and code. They
+are merged the old way and nothing is ever removed:
+- documents are matched by title; an unknown title creates a document
+  whose text is made of its fragments;
+- fragments are found by searching their text in the document (the first
+  occurrence wins); text not found is appended to the document;
+- codes, "Level: ..." columns and extra columns are added.
+
+
+6. APPEND NEW FRAGMENTS (rows without ID)
+-----------------------------------------
+Adds fragments that are not in the project yet -- e.g. coded directly
+in Excel. Only ADDS: nothing in the project is changed or removed.
+
+- Use the same layout as the export, leaving Fragment ID empty (or with
+  no Fragment ID column at all). Required columns: Document and
+  Fragment Text. Codification columns, Memo and attribute columns are
+  optional.
+- Rows WITH a Fragment ID are ignored (they are already in the project;
+  use "Update Fragments" for those). So you can add new rows at the
+  bottom of an exported workbook and run both imports on it.
+- Document: the title of a document already in the project (case
+  doesn't matter). Documents are not created.
+- Fragment Text: must be text of that document. Differences in case and
+  spacing/line breaks don't matter; the first occurrence is used. The
+  document text is never changed.
+- Codes: as in section 1 (one label per line). New labels and new
+  levels are created; the hierarchy of existing levels is not changed.
+
+A row is skipped -- and listed with its reason in the import log --
+when its document doesn't exist, its text isn't found in the document,
+or that text is already a fragment.
+
+
+7. IMPORT LOG
+-------------
+Every import that is applied adds an entry to "import_log.txt" in the
+project folder (Help > Open Import Log). Each entry lists the date, the
+workbook, a summary, the codebook changes (level hierarchy, labels
+created or moved to another parent) and every change, grouped by
+document and then by fragment:
+    + code linked        - code unlinked       x fragment deleted
+    * attribute or memo changed
+    ! ignored text edit / document text extended
+Cancelled or failed imports are not logged (nothing was changed).

@@ -1,0 +1,3 @@
+Voltar para pasta acima, e executar este comando:
+
+pyinstaller -y --workpath "C:\Builds\QDA_Claude_work" --distpath "C:\Builds\QDA_Claude_dist" QDA_Claude.spec
