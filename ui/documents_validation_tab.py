@@ -463,7 +463,7 @@ class DocumentsValidationTab:
             search_entry.focus_set()
             search_count_var.set("")
 
-        search_var.trace("w", highlight_search)
+        search_var.trace_add("write", highlight_search)
         prev_btn.config(command=previous_search)
         next_btn.config(command=next_search)
         clear_btn.config(command=clear_search)

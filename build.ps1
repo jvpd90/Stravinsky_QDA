@@ -61,10 +61,28 @@ Step "PyInstaller"
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
 if (-not (Test-Path (Join-Path $AppDir "Stravinsky.exe"))) { throw "Stravinsky.exe was not produced" }
 
+Step "Start-up self-test"
+# The packaged app opens its splash and main window (all tabs) and closes;
+# a build that can't start must never be shipped.
+$test = Start-Process (Join-Path $AppDir "Stravinsky.exe") -ArgumentList "--self-test" -PassThru -Wait
+$appLog = Join-Path $env:LOCALAPPDATA "Stravinsky\stravinsky.log"
+if (Test-Path $appLog) { Get-Content $appLog | Write-Host }
+if ($test.ExitCode -ne 0) { throw "The packaged app failed to start (exit code $($test.ExitCode))" }
+
 Step "Portable zip"
 $zip = Join-Path $ReleaseDir "Stravinsky-$Version-portable.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force -ErrorAction Stop }
-Compress-Archive -Path $AppDir -DestinationPath $zip -CompressionLevel Optimal -ErrorAction Stop
+# Right after the self-test Windows (or the antivirus scanning the new exe)
+# can hold the file for a moment: retry briefly.
+for ($try = 1; $try -le 10; $try++) {
+    try {
+        Compress-Archive -Path $AppDir -DestinationPath $zip -CompressionLevel Optimal -Force -ErrorAction Stop
+        break
+    } catch {
+        if ($try -eq 10) { throw }
+        Start-Sleep -Seconds 3
+    }
+}
 Write-Host $zip
 
 if (-not $SkipInstaller) {

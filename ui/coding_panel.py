@@ -33,7 +33,7 @@ class CodingPanel:
         search_frame = tk.Frame(self.frame)
         search_frame.pack(fill="x", pady=(0, 5))
         self.search_var = tk.StringVar()
-        self.search_var.trace("w", self.highlight_search)
+        self.search_var.trace_add("write", self.highlight_search)
         self.search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
         self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
         theme.placeholder(self.search_entry, "Search…   Ctrl+F", self.search_var)
