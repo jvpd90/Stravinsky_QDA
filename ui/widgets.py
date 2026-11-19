@@ -14,6 +14,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
 
+from .scaling import px
+from . import theme
+from .theme import ACCENT_SOFT
+
 TREE_INDENT_PX = 20
 
 
@@ -41,13 +45,20 @@ def _item_depth(tree: ttk.Treeview, iid: str) -> int:
     return depth
 
 
-def autosize_treeview_columns(tree: ttk.Treeview, min_width: int = 80, max_width: int = 480, padding: int = 28) -> None:
+def autosize_treeview_columns(tree: ttk.Treeview, min_width: int = 80, max_width: int = 480, padding: int = 28,
+                              stretch: bool = True) -> None:
     """Widen every visible column (including the '#0' tree column, when
     shown) to fit its widest current heading/cell text, up to max_width,
     and mark columns stretchable so they keep using extra space when the
     window grows. Call this after populating/refreshing a tree's rows --
-    it does not re-run automatically on data changes."""
+    it does not re-run automatically on data changes. With stretch=False
+    columns keep their fitted width and a wide table scrolls sideways
+    instead of squeezing every column."""
     font = _tree_font(tree)
+    try:  # headings use their own (usually larger) font
+        heading_font = Font(font=ttk.Style().lookup("Treeview.Heading", "font") or "TkHeadingFont")
+    except tk.TclError:
+        heading_font = font
     # cget("show") returns a tuple of Tcl objects (not a plain string), so
     # normalize each element to str before checking membership.
     show_flags = {str(flag) for flag in tree.cget("show")}
@@ -56,16 +67,16 @@ def autosize_treeview_columns(tree: ttk.Treeview, min_width: int = 80, max_width
     items = list(_iter_all_items(tree))
 
     for col in columns:
-        widest = font.measure(str(tree.heading(col, "text")))
+        widest = heading_font.measure(str(tree.heading(col, "text"))) + px(8)
         for iid in items:
             if col == "#0":
                 text_width = font.measure(str(tree.item(iid, "text")))
-                text_width += _item_depth(tree, iid) * TREE_INDENT_PX
+                text_width += _item_depth(tree, iid) * px(TREE_INDENT_PX)
             else:
                 text_width = font.measure(str(tree.set(iid, col)))
             widest = max(widest, text_width)
-        width = max(min_width, min(widest + padding, max_width))
-        tree.column(col, width=width, stretch=True)
+        width = max(px(min_width), min(widest + px(padding), px(max_width)))
+        tree.column(col, width=width, minwidth=min(width, px(min_width)), stretch=stretch)
 
 
 def autosize_listbox(listbox: tk.Listbox, min_chars: int = 20, max_chars: int = 70) -> None:
@@ -94,9 +105,9 @@ class WrappingList:
     clear() to drop every row at once.
     """
 
-    def __init__(self, parent, wraplength: int = 320, font=("Arial", 10)):
+    def __init__(self, parent, wraplength: int = 320, font=("Segoe UI", 10)):
         self.frame = tk.Frame(parent)
-        self.wraplength = wraplength
+        self.wraplength = px(wraplength)
         self.font = font
         self._labels: list[tk.Label] = []
         self._items: list[str] = []
@@ -115,7 +126,7 @@ class WrappingList:
 
     def select(self, index: int) -> None:
         for i, label in enumerate(self._labels):
-            label.configure(bg="#cce5ff" if i == index else "white")
+            label.configure(bg=ACCENT_SOFT if i == index else "white")
         self._selected = index
 
     def curselection(self) -> tuple[int, ...]:
@@ -152,6 +163,8 @@ def center_dialog(dialog: tk.Toplevel, parent, width: int | None = None, height:
     centering it.
     """
     dialog.update_idletasks()
+    width = px(width) if width is not None else None
+    height = px(height) if height is not None else None
     if width is None:
         width = dialog.winfo_reqwidth()
     if height is None:
@@ -161,6 +174,17 @@ def center_dialog(dialog: tk.Toplevel, parent, width: int | None = None, height:
     x = root.winfo_rootx() + (root.winfo_width() - width) // 2
     y = root.winfo_rooty() + (root.winfo_height() - height) // 2
     dialog.geometry(f"{width}x{height}+{x}+{y}")
+
+
+def autohide_scrollbar(bar: ttk.Scrollbar):
+    """Scroll command that hides `bar` while everything fits."""
+    def set_(first, last):
+        if float(first) <= 0.0 and float(last) >= 1.0:
+            bar.grid_remove()
+        else:
+            bar.grid()
+        bar.set(first, last)
+    return set_
 
 
 def add_scrollbars(frame: tk.Widget, widget, vertical: bool = True, horizontal: bool = False) -> None:
@@ -178,9 +202,89 @@ def add_scrollbars(frame: tk.Widget, widget, vertical: bool = True, horizontal: 
     if vertical:
         vbar = ttk.Scrollbar(frame, orient="vertical", command=widget.yview)
         vbar.grid(row=0, column=1, sticky="ns")
-        widget.configure(yscrollcommand=vbar.set)
+        widget.configure(yscrollcommand=autohide_scrollbar(vbar))
 
     if horizontal:
         hbar = ttk.Scrollbar(frame, orient="horizontal", command=widget.xview)
         hbar.grid(row=1, column=0, sticky="ew")
-        widget.configure(xscrollcommand=hbar.set)
+        widget.configure(xscrollcommand=autohide_scrollbar(hbar))
+
+
+class ScrollableFrame:
+    """A vertically scrolling column: put widgets in `.inner`, place `.outer`.
+    The mouse wheel scrolls it while the pointer is over it (lists and
+    tables inside keep scrolling themselves)."""
+
+    def __init__(self, parent, width: int):
+        self.outer = tk.Frame(parent)
+        self.outer.rowconfigure(0, weight=1)
+        self.outer.columnconfigure(0, weight=1)
+        self.canvas = tk.Canvas(self.outer, width=width, highlightthickness=0, background=theme.BG)
+        bar = ttk.Scrollbar(self.outer, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=autohide_scrollbar(bar))
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        bar.grid(row=0, column=1, sticky="ns")
+
+        self.inner = tk.Frame(self.canvas)
+        window = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
+        self.inner.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(window, width=e.width))
+        self.outer.bind("<Enter>", lambda e: self.outer.bind_all("<MouseWheel>", self._on_wheel))
+        self.outer.bind("<Leave>", lambda e: self.outer.unbind_all("<MouseWheel>"))
+
+    def _on_wheel(self, event):
+        if isinstance(event.widget, (tk.Listbox, tk.Text, ttk.Treeview)):
+            return
+        if self.inner.winfo_reqheight() > self.canvas.winfo_height():
+            self.canvas.yview_scroll(int(-event.delta / 120), "units")
+
+
+class Section:
+    """A titled block whose body folds away when the title is clicked.
+    Visibility of whole sections is managed by `SectionStack`."""
+
+    def __init__(self, parent, title: str, expanded: bool = True):
+        self.title = title
+        self.frame = tk.Frame(parent)
+        self.header = tk.Label(self.frame, font=theme.H3, anchor="w", cursor="hand2")
+        self.header.pack(fill="x", pady=(px(10), px(4)))
+        self.header.bind("<Button-1>", lambda e: self.toggle())
+        self.body = tk.Frame(self.frame)
+        self.expanded = not expanded
+        self.toggle()
+
+    def toggle(self) -> None:
+        self.expanded = not self.expanded
+        self.header.configure(text=("▾  " if self.expanded else "▸  ") + self.title)
+        if self.expanded:
+            self.body.pack(fill="both", expand=True)
+        else:
+            self.body.pack_forget()
+
+
+class SectionStack:
+    """Sections stacked in a fixed order, any of which can be hidden."""
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.sections: list[Section] = []
+        self.visible: dict[Section, bool] = {}
+
+    def add(self, title: str, expanded: bool = True) -> Section:
+        section = Section(self.parent, title, expanded)
+        self.sections.append(section)
+        self.visible[section] = True
+        self._repack()
+        return section
+
+    def set_visible(self, section: Section, visible: bool) -> None:
+        if self.visible.get(section) != visible:
+            self.visible[section] = visible
+            self._repack()
+
+    def _repack(self) -> None:
+        for section in self.sections:
+            section.frame.pack_forget()
+        for section in self.sections:
+            if self.visible[section]:
+                section.frame.pack(fill="x")

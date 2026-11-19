@@ -15,6 +15,8 @@ from collections import Counter
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
+from . import theme
+from .scaling import px
 from .. import codebook_io
 from ..colors import DEFAULT_CODE_COLOR
 from . import codebook_dialogs, dialogs, excel_actions, widgets
@@ -38,17 +40,17 @@ class CodesPanel:
 
         self.frame = tk.Frame(parent)
 
-        tk.Label(self.frame, text="Codebook", font=("Arial", 11, "bold")).pack(fill="x", pady=(0, 2))
+        tk.Label(self.frame, text="Codebook", font=theme.H2, anchor="w").pack(fill="x", pady=(0, 2))
 
         button_frame = tk.Frame(self.frame)
         button_frame.pack(fill="x", pady=2)
-        tk.Button(button_frame, text="New Label", command=self.new_label, font=("Arial", 11)).pack(
+        theme.primary(tk.Button(button_frame, text="New Label", command=self.new_label)).pack(
             side="left", fill="x", expand=True, padx=(0, 2)
         )
-        tk.Button(button_frame, text="Levels…", command=self.manage_levels, font=("Arial", 11)).pack(
+        tk.Button(button_frame, text="Levels…", command=self.manage_levels).pack(
             side="left", fill="x", expand=True, padx=2
         )
-        excel_button = tk.Menubutton(button_frame, text="Excel ▾", relief="raised", font=("Arial", 11))
+        excel_button = tk.Menubutton(button_frame, text="Excel ▾")
         excel_menu = tk.Menu(excel_button, tearoff=0)
         excel_menu.add_command(label="Export Fragments to Excel…", command=lambda: excel_actions.export_fragments(app))
         excel_menu.add_command(
@@ -63,7 +65,7 @@ class CodesPanel:
         excel_button.config(menu=excel_menu)
         excel_button.pack(side="left", fill="x", expand=True, padx=(2, 0))
 
-        self.structure_label = tk.Label(self.frame, text="", font=("Arial", 8), fg="#555555", wraplength=220)
+        self.structure_label = tk.Label(self.frame, text="", font=("Segoe UI", 8), fg=theme.MUTED, wraplength=px(220))
         self.structure_label.pack(fill="x")
         self.structure_label.bind("<Configure>", lambda e: self.structure_label.config(wraplength=max(e.width - 4, 80)))
 
@@ -71,10 +73,10 @@ class CodesPanel:
         view_frame.pack(fill="x", pady=(4, 2))
         self.view_var = tk.StringVar(value=TREE_VIEW)
         for value, text in ((TREE_VIEW, "Tree"), (LEVEL_VIEW, "By level")):
-            tk.Radiobutton(
+            theme.segmented(tk.Radiobutton(
                 view_frame, text=text, value=value, variable=self.view_var, indicatoron=False,
                 command=self.populate, padx=8,
-            ).pack(side="left", fill="x", expand=True)
+            )).pack(side="left", fill="x", expand=True)
 
         filter_frame = tk.Frame(self.frame)
         filter_frame.pack(fill="x", pady=(2, 2))
@@ -93,13 +95,13 @@ class CodesPanel:
         )
         self.tree.heading("#0", text="Label")
         self.tree.heading("uses", text="#")
-        self.tree.column("uses", width=40, anchor="center", stretch=False)
+        self.tree.column("uses", width=px(40), anchor="center", stretch=False)
         widgets.add_scrollbars(codes_frame, self.tree, horizontal=True)
 
         style = ttk.Style()
-        style.configure("Treeview", font=("Arial", 10))
-        self.tree.tag_configure("level", font=("Arial", 10, "bold"), background="#e8eef7")
-        self.tree.tag_configure("group", font=("Arial", 9, "italic"), foreground="#666666")
+        style.configure("Treeview", font=("Segoe UI", 10))
+        self.tree.tag_configure("level", font=theme.H3, background=theme.SURFACE_ALT)
+        self.tree.tag_configure("group", font=("Segoe UI", 9, "italic"), foreground=theme.MUTED)
 
         self.tree.bind("<Button-3>", self.on_right_click)
         self.tree.bind("<Double-Button-1>", self.on_double_click)
@@ -110,6 +112,7 @@ class CodesPanel:
 
     # -- rendering -----------------------------------------------------
     def create_color_image(self, color_hex, size=12):
+        size = px(size)
         try:
             from PIL import Image, ImageDraw, ImageTk
 

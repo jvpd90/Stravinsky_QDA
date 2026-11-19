@@ -4,8 +4,10 @@ coding menu, fragment highlighting/hover tooltips, and memo editing.
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, ttk
 
+from . import theme
+from .scaling import px
 from . import codebook_dialogs, widgets
 
 
@@ -30,20 +32,19 @@ class CodingPanel:
 
         search_frame = tk.Frame(self.frame)
         search_frame.pack(fill="x", pady=(0, 5))
-        tk.Label(search_frame, text="Search:").pack(side="left", padx=5)
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self.highlight_search)
         self.search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
-        self.search_entry.pack(side="left", fill="x", expand=True, padx=5)
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        theme.placeholder(self.search_entry, "Search…   Ctrl+F", self.search_var)
         tk.Button(search_frame, text="Prev", command=self.previous_search).pack(side="left", padx=2)
         tk.Button(search_frame, text="Next", command=self.next_search).pack(side="left", padx=2)
         tk.Button(search_frame, text="Clear", command=self.clear_search).pack(side="left", padx=2)
         self.search_count_var = tk.StringVar(value="")
-        tk.Label(search_frame, textvariable=self.search_count_var, font=("Arial", 8), fg="#555555").pack(side="left", padx=5)
-        tk.Label(search_frame, text="(Ctrl+F to focus)", font=("Arial", 8)).pack(side="left", padx=5)
+        tk.Label(search_frame, textvariable=self.search_count_var, font=("Segoe UI", 8), fg=theme.MUTED).pack(side="left", padx=5)
 
-        self.text = tk.Text(self.frame, wrap="word", font=("Arial", 10))
-        scrollbar = tk.Scrollbar(self.frame, command=self.text.yview)
+        self.text = tk.Text(self.frame, wrap="word", font=("Segoe UI", 10))
+        scrollbar = ttk.Scrollbar(self.frame, command=self.text.yview)
         self.text.config(yscrollcommand=scrollbar.set)
         self.text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -434,8 +435,8 @@ class CodingPanel:
         self.tooltip.wm_overrideredirect(True)
         self.tooltip.wm_geometry(f"+{x + 10}+{y + 10}")
         tk.Label(
-            self.tooltip, text=text, background="lightyellow", relief="solid",
-            borderwidth=1, font=("Arial", 9), wraplength=300, justify="left", padx=5, pady=3,
+            self.tooltip, text=text, background=theme.SURFACE, relief="flat", highlightthickness=1, highlightbackground=theme.BORDER_STRONG,
+            borderwidth=1, font=("Segoe UI", 9), wraplength=px(300), justify="left", padx=5, pady=3,
         ).pack()
         self.tooltip.after(3000, self.hide_tooltip)
 
@@ -536,16 +537,16 @@ class CodingPanel:
 
         doc_title = self.app.current_doc["title"] if self.app.current_doc else "Unknown"
 
-        tk.Label(dialog, text=f"Fragment ID: {fragment['id']}", font=("Arial", 11, "bold")).pack(anchor="w", padx=12, pady=(10, 2))
-        tk.Label(dialog, text=f"Document: {doc_title}", font=("Arial", 10), wraplength=500, justify="left").pack(anchor="w", padx=12)
-        tk.Label(dialog, text=f"Labels: {codes_text}", font=("Arial", 10), wraplength=500, justify="left").pack(anchor="w", padx=12, pady=(4, 8))
-        tk.Label(dialog, text=f"Memo: {memo_text}", font=("Arial", 10), wraplength=500, justify="left").pack(anchor="w", padx=12, pady=(0, 8))
+        tk.Label(dialog, text=f"Fragment ID: {fragment['id']}", font=theme.H2).pack(anchor="w", padx=12, pady=(10, 2))
+        tk.Label(dialog, text=f"Document: {doc_title}", font=("Segoe UI", 10), wraplength=px(500), justify="left").pack(anchor="w", padx=12)
+        tk.Label(dialog, text=f"Labels: {codes_text}", font=("Segoe UI", 10), wraplength=px(500), justify="left").pack(anchor="w", padx=12, pady=(4, 8))
+        tk.Label(dialog, text=f"Memo: {memo_text}", font=("Segoe UI", 10), wraplength=px(500), justify="left").pack(anchor="w", padx=12, pady=(0, 8))
 
-        tk.Label(dialog, text="Full Fragment Text:", font=("Arial", 10, "bold")).pack(anchor="w", padx=12)
+        tk.Label(dialog, text="Full Fragment Text:", font=theme.H3).pack(anchor="w", padx=12)
         text_frame = tk.Frame(dialog)
         text_frame.pack(fill="both", expand=True, padx=12, pady=(4, 8))
 
-        fragment_text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 10), height=12)
+        fragment_text_widget = tk.Text(text_frame, wrap="word", font=("Segoe UI", 10), height=12)
         fragment_text_widget.insert("1.0", self.get_fragment_text(fragment))
         fragment_text_widget.config(state="disabled")
         fragment_text_widget.pack(side="left", fill="both", expand=True)

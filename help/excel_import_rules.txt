@@ -1,4 +1,4 @@
-QDA - RULES FOR IMPORTING AN EXCEL EXPORT
+STRAVINSKY - RULES FOR IMPORTING AN EXCEL EXPORT
 =========================================
 
 Menu: Codificação > Codebook panel > Excel button (also in the File menu):

@@ -12,6 +12,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
+from . import theme
+from .scaling import px
 from . import widgets
 
 NONE_CHOICE = "—"
@@ -30,10 +32,10 @@ def choose_item(parent, items: list[dict], title: str, prompt: str, none_text: s
     dialog.transient(parent)
     dialog.grab_set()
 
-    tk.Label(dialog, text=prompt, font=("Arial", 10, "bold"), wraplength=380, justify="left").pack(padx=12, pady=8)
+    tk.Label(dialog, text=prompt, font=theme.H3, wraplength=px(380), justify="left").pack(padx=12, pady=8)
     listbox_frame = tk.Frame(dialog)
     listbox_frame.pack(fill="both", expand=True, padx=12, pady=4)
-    listbox = tk.Listbox(listbox_frame, selectmode="single", font=("Arial", 10), height=min(15, len(items) + 1))
+    listbox = tk.Listbox(listbox_frame, selectmode="single", font=("Segoe UI", 10), height=min(15, len(items) + 1))
     widgets.add_scrollbars(listbox_frame, listbox, horizontal=True)
     offset = 0
     if none_text is not None:
@@ -80,7 +82,7 @@ def manage_levels_dialog(parent, store, on_change) -> None:
     dialog.grab_set()
 
     tk.Label(
-        dialog, font=("Arial", 9), justify="left", wraplength=520, anchor="w",
+        dialog, font=("Segoe UI", 9), justify="left", wraplength=px(520), anchor="w",
         text=(
             "Levels are the dimensions you label a fragment on (e.g. Tema, Subtema, Sentimento). "
             "A level that depends on another is hierarchical: each of its labels sits under a label "
@@ -94,7 +96,7 @@ def manage_levels_dialog(parent, store, on_change) -> None:
     tree.heading("#0", text="Level")
     tree.heading("kind", text="Structure")
     tree.heading("labels", text="Labels")
-    tree.column("labels", width=60, anchor="center")
+    tree.column("labels", width=px(60), anchor="center")
     widgets.add_scrollbars(tree_frame, tree, horizontal=True)
 
     def render(select_id: str | None = None):
@@ -303,7 +305,7 @@ def assign_labels_dialog(parent, store, title: str, initial_ids: list[str], new_
     dialog.transient(parent)
     dialog.grab_set()
 
-    tk.Label(dialog, text="Choose a label on each level (leave “—” to skip a level).", font=("Arial", 9)).pack(
+    tk.Label(dialog, text="Choose a label on each level (leave “—” to skip a level).", font=("Segoe UI", 9)).pack(
         anchor="w", padx=12, pady=(10, 4)
     )
     grid = tk.Frame(dialog)
@@ -372,7 +374,7 @@ def assign_labels_dialog(parent, store, title: str, initial_ids: list[str], new_
             ttk.Separator(grid, orient="horizontal").grid(row=row * 2, column=0, columnspan=3, sticky="ew", pady=4)
         previous_depth = depth
         prefix = "    " * depth + ("↳ " if depth else "")
-        tk.Label(grid, text=f"{prefix}{level['name']}:", anchor="w", font=("Arial", 10, "bold" if depth == 0 else "normal")).grid(
+        tk.Label(grid, text=f"{prefix}{level['name']}:", anchor="w", font=("Segoe UI", 10, "bold" if depth == 0 else "normal")).grid(
             row=row * 2 + 1, column=0, sticky="w", padx=(0, 8), pady=2
         )
         combo = ttk.Combobox(grid, state="readonly", width=40, height=15)
@@ -388,7 +390,7 @@ def assign_labels_dialog(parent, store, title: str, initial_ids: list[str], new_
             f"{store.level(lid)['name']}:{names.rstrip(';')}" for lid, names in extra_notes.items()
         )
         tk.Label(
-            dialog, fg="#a33333", font=("Arial", 8), wraplength=460, justify="left", anchor="w",
+            dialog, fg=theme.ERROR, font=("Segoe UI", 8), wraplength=px(460), justify="left", anchor="w",
             text=f"This fragment has more than one label on some levels; saving keeps only the one shown ({note}).",
         ).pack(fill="x", padx=12, pady=(4, 0))
 
@@ -406,7 +408,7 @@ def assign_labels_dialog(parent, store, title: str, initial_ids: list[str], new_
     dialog.bind("<Escape>", lambda e: dialog.destroy())
 
     if not ordered:
-        tk.Label(grid, text="The codebook has no levels yet — add one under Levels…", fg="gray").grid(row=0, column=0)
+        tk.Label(grid, text="The codebook has no levels yet — add one under Levels…", fg=theme.SUBTLE).grid(row=0, column=0)
 
     refresh_combos()
     widgets.center_dialog(dialog, parent)

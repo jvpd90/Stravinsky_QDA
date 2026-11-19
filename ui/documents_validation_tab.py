@@ -16,6 +16,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 
+from . import theme
+from .scaling import px
 from ..extraction import extract_text_for
 from . import dialogs, widgets
 
@@ -24,9 +26,9 @@ COLUMNS = [
     ("validated", "Validados"),
     ("discarded", "Descartados"),
 ]
-COLUMN_BG = "#f2f2f2"
-HOVER_BG = "#dbe9ff"
-STRIPE_COLOR = "#8899aa"
+COLUMN_BG = theme.SURFACE_ALT
+HOVER_BG = theme.ACCENT_SOFT
+STRIPE_COLOR = "#a9c3f0"  # light blue
 DRAG_THRESHOLD = 4  # pixels of motion before a press counts as a drag, not a click
 PREVIEW_WORDS = 24
 IMPORT_FILETYPES = [
@@ -58,10 +60,10 @@ class DocumentsValidationTab:
 
         toolbar = tk.Frame(self.frame, padx=10, pady=8)
         toolbar.grid(row=0, column=0, sticky="ew")
-        tk.Label(toolbar, text="Leitura e Validação de Documentos", font=("Arial", 14, "bold")).pack(side="left")
+        tk.Label(toolbar, text="Leitura e Validação de Documentos", font=theme.H1).pack(side="left")
         self.import_folder_btn = tk.Button(toolbar, text="Importar Pasta", command=self.bulk_import_folder)
         self.import_folder_btn.pack(side="right")
-        self.import_btn = tk.Button(toolbar, text="Importar Arquivos em Lote", command=self.bulk_import_files)
+        self.import_btn = theme.primary(tk.Button(toolbar, text="Importar Arquivos em Lote", command=self.bulk_import_files))
         self.import_btn.pack(side="right", padx=(0, 4))
 
         self.board = tk.Frame(self.frame)
@@ -83,12 +85,12 @@ class DocumentsValidationTab:
 
     # -- column scaffolding ----------------------------------------------------
     def _build_column(self, col_index: int, status: str, title: str):
-        outer = tk.Frame(self.board, bd=1, relief="solid")
+        outer = tk.Frame(self.board, bd=0, highlightthickness=1, highlightbackground=theme.BORDER)
         outer.grid(row=0, column=col_index, sticky="nsew", padx=6)
         outer.columnconfigure(0, weight=1)
         outer.rowconfigure(1, weight=1)
 
-        header = tk.Label(outer, text=title, font=("Arial", 11, "bold"), bg="#e0e0e0", pady=6)
+        header = tk.Label(outer, text=title, font=theme.H3, bg=theme.SURFACE, anchor="w", padx=px(12), pady=px(8))
         header.grid(row=0, column=0, sticky="ew")
         self.column_headers[status] = header
 
@@ -99,7 +101,7 @@ class DocumentsValidationTab:
 
         canvas = tk.Canvas(canvas_frame, highlightthickness=0, bg=COLUMN_BG)
         scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.configure(yscrollcommand=widgets.autohide_scrollbar(scrollbar))
         canvas.grid(row=0, column=0, sticky="nsew")
         scrollbar.grid(row=0, column=1, sticky="ns")
 
@@ -127,8 +129,8 @@ class DocumentsValidationTab:
                 child.destroy()
 
         has_project = bool(self.app.store.path)
-        self.import_btn.config(state="normal" if has_project else "disabled")
-        self.import_folder_btn.config(state="normal" if has_project else "disabled")
+        theme.set_enabled(self.import_btn, has_project)
+        theme.set_enabled(self.import_folder_btn, has_project)
 
         if not has_project:
             for status, title in COLUMNS:
@@ -136,7 +138,7 @@ class DocumentsValidationTab:
                 tk.Label(
                     self.column_bodies[status],
                     text="Abra ou crie um projeto para importar documentos.",
-                    bg=COLUMN_BG, fg="gray", font=("Arial", 9), wraplength=200, justify="center", pady=16,
+                    bg=COLUMN_BG, fg=theme.SUBTLE, font=("Segoe UI", 9), wraplength=px(200), justify="center", pady=16,
                 ).pack(fill="x")
             return
 
@@ -150,7 +152,7 @@ class DocumentsValidationTab:
             body = self.column_bodies[status]
             if not docs:
                 tk.Label(
-                    body, text="(vazio)", bg=COLUMN_BG, fg="gray", font=("Arial", 9, "italic"), pady=10,
+                    body, text="(vazio)", bg=COLUMN_BG, fg=theme.SUBTLE, font=("Segoe UI", 9, "italic"), pady=10,
                 ).pack(fill="x")
                 continue
             for doc in docs:
@@ -180,7 +182,7 @@ class DocumentsValidationTab:
         doc_id = doc["id"]
         title = doc.get("title", "Untitled")
 
-        card = tk.Frame(parent, bg="white", bd=1, relief="solid")
+        card = tk.Frame(parent, bg="white", bd=0, highlightthickness=1, highlightbackground=theme.BORDER)
         card.pack(fill="x", padx=6, pady=4)
 
         stripe = tk.Frame(card, bg=STRIPE_COLOR, width=5)
@@ -194,13 +196,13 @@ class DocumentsValidationTab:
         subtitle = self._subtitle(doc)
         if subtitle:
             tk.Label(
-                body, text=subtitle, font=("Arial", 8), fg="#555555", bg="white", anchor="w",
+                body, text=subtitle, font=("Segoe UI", 8), fg=theme.MUTED, bg="white", anchor="w",
             ).pack(fill="x", pady=(2, 0))
 
         preview = self._preview_text(doc)
         preview_label = tk.Label(
-            body, text=preview or "(documento vazio)", font=("Arial", 9), bg="white",
-            anchor="w", justify="left", wraplength=220,
+            body, text=preview or "(documento vazio)", font=("Segoe UI", 9), bg="white",
+            anchor="w", justify="left", wraplength=px(220),
         )
         preview_label.pack(fill="x", pady=(2, 0))
 
@@ -217,7 +219,7 @@ class DocumentsValidationTab:
     def _build_editable_title(self, parent, doc: dict, title: str):
         doc_id = doc["id"]
         if self._editing == doc_id:
-            entry = tk.Entry(parent, font=("Arial", 10, "bold"))
+            entry = tk.Entry(parent, font=theme.H3)
             entry.insert(0, title)
             entry.select_range(0, "end")
             entry.pack(fill="x", pady=(2, 0))
@@ -241,7 +243,7 @@ class DocumentsValidationTab:
             return entry
 
         label = tk.Label(
-            parent, text=title, font=("Arial", 10, "bold"), bg="white", anchor="w", justify="left", wraplength=220,
+            parent, text=title, font=theme.H3, bg="white", anchor="w", justify="left", wraplength=px(220),
         )
         label.pack(fill="x", pady=(2, 0))
         label.bind("<Double-Button-1>", lambda e: self._start_edit(doc_id))
@@ -315,8 +317,8 @@ class DocumentsValidationTab:
         except tk.TclError:
             pass  # -alpha isn't supported on every platform/WM
         tk.Label(
-            ghost, text=doc.get("title", "Untitled"), bg="#fffbe0", bd=1, relief="solid",
-            font=("Arial", 9), justify="left", padx=6, pady=4,
+            ghost, text=doc.get("title", "Untitled"), bg=theme.SURFACE, bd=0, highlightthickness=1, highlightbackground=theme.ACCENT,
+            font=("Segoe UI", 9), justify="left", padx=6, pady=4,
         ).pack()
         return ghost
 
@@ -371,15 +373,15 @@ class DocumentsValidationTab:
         dialog.transient(self.frame)
         dialog.grab_set()
 
-        tk.Label(dialog, text=doc.get("title", "Untitled"), font=("Arial", 12, "bold"), wraplength=560, justify="left").pack(anchor="w", padx=12, pady=(10, 2))
+        tk.Label(dialog, text=doc.get("title", "Untitled"), font=("Segoe UI", 12, "bold"), wraplength=px(560), justify="left").pack(anchor="w", padx=12, pady=(10, 2))
         subtitle = self._subtitle(doc)
         if subtitle:
-            tk.Label(dialog, text=subtitle, font=("Arial", 9), fg="#555555").pack(anchor="w", padx=12)
+            tk.Label(dialog, text=subtitle, font=("Segoe UI", 9), fg=theme.MUTED).pack(anchor="w", padx=12)
         if doc.get("imported_from"):
-            tk.Label(dialog, text=f"Origem: {doc['imported_from']}", font=("Arial", 8), fg="gray", wraplength=560, justify="left").pack(anchor="w", padx=12)
-        tk.Label(dialog, text=f"Status: {status_text}", font=("Arial", 10)).pack(anchor="w", padx=12, pady=(4, 8))
+            tk.Label(dialog, text=f"Origem: {doc['imported_from']}", font=("Segoe UI", 8), fg=theme.SUBTLE, wraplength=px(560), justify="left").pack(anchor="w", padx=12)
+        tk.Label(dialog, text=f"Status: {status_text}", font=("Segoe UI", 10)).pack(anchor="w", padx=12, pady=(4, 8))
 
-        tk.Label(dialog, text="Conteúdo:", font=("Arial", 10, "bold")).pack(anchor="w", padx=12)
+        tk.Label(dialog, text="Conteúdo:", font=theme.H3).pack(anchor="w", padx=12)
 
         search_frame = tk.Frame(dialog)
         search_frame.pack(fill="x", padx=12, pady=(2, 0))
@@ -394,11 +396,11 @@ class DocumentsValidationTab:
         clear_btn = tk.Button(search_frame, text="Limpar")
         clear_btn.pack(side="left", padx=2)
         search_count_var = tk.StringVar(value="")
-        tk.Label(search_frame, textvariable=search_count_var, font=("Arial", 8), fg="#555555").pack(side="left", padx=5)
+        tk.Label(search_frame, textvariable=search_count_var, font=("Segoe UI", 8), fg=theme.MUTED).pack(side="left", padx=5)
 
         text_frame = tk.Frame(dialog)
         text_frame.pack(fill="both", expand=True, padx=12, pady=(2, 8))
-        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 10))
+        text_widget = tk.Text(text_frame, wrap="word", font=("Segoe UI", 10))
         text_widget.insert("1.0", full_text)
         text_widget.config(state="disabled")
         text_widget.pack(side="left", fill="both", expand=True)
@@ -470,7 +472,7 @@ class DocumentsValidationTab:
         tk.Label(
             dialog,
             text="Arraste o card para “Validados” ou “Descartados” para atualizar o status.",
-            font=("Arial", 8, "italic"), fg="gray",
+            font=("Segoe UI", 8, "italic"), fg=theme.SUBTLE,
         ).pack(anchor="w", padx=12)
 
         tk.Button(dialog, text="Fechar", command=dialog.destroy).pack(pady=(6, 12))

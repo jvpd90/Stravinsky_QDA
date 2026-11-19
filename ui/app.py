@@ -19,6 +19,9 @@ from .coding_panel import CodingPanel
 from . import excel_actions
 from .documents_validation_tab import DocumentsValidationTab
 from .analysis_tab import AnalysisTab
+from . import theme
+from .scaling import px, scale
+from .splash import apply_window_icon
 
 # Bundled next to the package (see QDA_Claude.spec datas).
 HELP_DIR = Path(__file__).resolve().parent.parent / "help"
@@ -29,8 +32,10 @@ LAYOUT_FILE = Path.home() / ".qda_planapp" / "layout.json"
 class QDAApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("QDA - PLANAPP")
-        self.geometry("1200x700")
+        self.title("Stravinsky")
+        apply_window_icon(self)
+        theme.apply(self)
+        self.geometry(f"{px(1200)}x{px(700)}")
 
         self.store = ProjectStore(path=None)  # type: ignore[arg-type]
         self.current_doc: dict | None = None
@@ -52,6 +57,8 @@ class QDAApp(tk.Tk):
             layout = json.loads(LAYOUT_FILE.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return
+        if layout.get("scale") != scale():
+            return  # saved at another display scale: sizes would be off
         if isinstance(layout.get("geometry"), str):
             self.geometry(layout["geometry"])
 
@@ -78,7 +85,7 @@ class QDAApp(tk.Tk):
             sashes[name] = [pane.sash_coord(i)[axis] for i in range(len(pane.panes()) - 1)]
         try:
             LAYOUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-            LAYOUT_FILE.write_text(json.dumps({"geometry": self.geometry(), "sashes": sashes}), encoding="utf-8")
+            LAYOUT_FILE.write_text(json.dumps({"geometry": self.geometry(), "sashes": sashes, "scale": scale()}), encoding="utf-8")
         except OSError:
             pass  # a layout that isn't remembered is no reason to block closing
 
@@ -99,6 +106,12 @@ class QDAApp(tk.Tk):
 
         style = ttk.Style()
         style.configure("TNotebook.Tab", font=tkfont.nametofont("TkDefaultFont"))
+
+        # Treeview rows have a fixed pixel height that doesn't follow the font
+        # or the display scale; size it to the largest font used in trees.
+        tree_fonts = [tkfont.nametofont("TkDefaultFont"),
+                      tkfont.Font(font=theme.H3)]
+        style.configure("Treeview", rowheight=max(f.metrics("linespace") for f in tree_fonts) + px(6))
 
     # -------------------------
     # UI Layout
@@ -123,15 +136,15 @@ class QDAApp(tk.Tk):
         # the width they were dragged to.
         self.coding_tab.columnconfigure(0, weight=1)
         self.coding_tab.rowconfigure(0, weight=1)
-        self.coding_split = tk.PanedWindow(self.coding_tab, orient="horizontal", sashwidth=6, sashrelief="raised", bd=0)
+        self.coding_split = tk.PanedWindow(self.coding_tab, orient="horizontal", sashwidth=px(8), bd=0)
         self.coding_split.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
         self.documents_panel = DocumentsPanel(self.coding_split, self)
         self.coding_panel = CodingPanel(self.coding_split, self)
         self.codes_panel = CodesPanel(self.coding_split, self)
-        self.coding_split.add(self.documents_panel.frame, width=300, minsize=150, stretch="never", padx=3)
-        self.coding_split.add(self.coding_panel.frame, width=560, minsize=300, stretch="always", padx=3)
-        self.coding_split.add(self.codes_panel.frame, width=300, minsize=150, stretch="never", padx=3)
+        self.coding_split.add(self.documents_panel.frame, width=px(300), minsize=px(150), stretch="never", padx=px(3))
+        self.coding_split.add(self.coding_panel.frame, width=px(560), minsize=px(300), stretch="always", padx=px(3))
+        self.coding_split.add(self.codes_panel.frame, width=px(300), minsize=px(150), stretch="never", padx=px(3))
 
         self.documents_validation_tab = DocumentsValidationTab(self.documents_validation_tab_frame, self)
         self.documents_validation_tab_frame.columnconfigure(0, weight=1)
@@ -195,7 +208,7 @@ class QDAApp(tk.Tk):
             return
         window = tk.Toplevel(self)
         window.title(title)
-        window.geometry("820x640")
+        window.geometry(f"{px(820)}x{px(640)}")
         text = tk.Text(window, wrap="word", font=("Consolas", 10))
         scrollbar = ttk.Scrollbar(window, command=text.yview)
         text.configure(yscrollcommand=scrollbar.set)

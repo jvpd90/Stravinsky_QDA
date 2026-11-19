@@ -11,6 +11,8 @@ import tkinter as tk
 from datetime import date
 from tkinter import messagebox, ttk
 
+from . import theme
+from .scaling import px
 from .. import attribute_formulas
 from ..colors import COLOR_PALETTE, DEFAULT_CODE_COLOR
 from . import widgets
@@ -28,7 +30,7 @@ def show_busy(parent, message: str) -> tk.Toplevel:
     dialog.transient(parent)
     dialog.resizable(False, False)
     tk.Label(
-        dialog, text=message, font=("Arial", 10), wraplength=420, justify="center",
+        dialog, text=message, font=("Segoe UI", 10), wraplength=px(420), justify="center",
     ).pack(expand=True, padx=20, pady=20)
 
     # Size to the label's natural (possibly wrapped) footprint rather than a
@@ -53,7 +55,7 @@ def choose_color(parent, cancel_value: str | None = DEFAULT_CODE_COLOR) -> str |
 
     selected_color = [cancel_value]
 
-    tk.Label(dialog, text="Select a color for this code:", font=("Arial", 10, "bold")).pack(pady=10)
+    tk.Label(dialog, text="Select a color for this code:", font=theme.H3).pack(pady=10)
 
     color_frame = tk.Frame(dialog)
     color_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -104,8 +106,8 @@ def show_document_attributes_dialog(
     dialog.transient(parent)
     dialog.grab_set()
 
-    tk.Label(dialog, text=f"Document: {doc['title']}", font=("Arial", 10, "bold")).pack(pady=8)
-    tk.Label(dialog, text="Attributes:", font=("Arial", 9)).pack(anchor="w", padx=12)
+    tk.Label(dialog, text=f"Document: {doc['title']}", font=theme.H3).pack(pady=8)
+    tk.Label(dialog, text="Attributes:", font=("Segoe UI", 9)).pack(anchor="w", padx=12)
 
     entries_frame = tk.Frame(dialog)
     entries_frame.pack(fill="both", expand=True, padx=12, pady=4)
@@ -121,7 +123,7 @@ def show_document_attributes_dialog(
 
         if attr_type == "computed":
             value = resolve_value(name) if resolve_value else ""
-            tk.Label(frame, text=value or "—", fg="gray", anchor="w").pack(
+            tk.Label(frame, text=value or "—", fg=theme.SUBTLE, anchor="w").pack(
                 side="left", fill="x", expand=True, padx=4
             )
         else:
@@ -180,7 +182,7 @@ def manage_document_schema_dialog(
     dialog.transient(parent)
     dialog.grab_set()
 
-    tk.Label(dialog, text="Document Attribute Schema:", font=("Arial", 10, "bold")).pack(pady=8)
+    tk.Label(dialog, text="Document Attribute Schema:", font=theme.H3).pack(pady=8)
 
     listbox_frame = tk.Frame(dialog)
     listbox_frame.pack(fill="both", expand=True, padx=12, pady=4)
@@ -189,7 +191,7 @@ def manage_document_schema_dialog(
     # WrappingList wraps each row within a fixed width instead of a
     # Listbox's one-line-per-item (which would either hide the overflow
     # or force the whole window wider to show it).
-    listbox = widgets.WrappingList(listbox_frame, wraplength=340)
+    listbox = widgets.WrappingList(listbox_frame, wraplength=px(340))
     listbox.frame.pack(fill="both", expand=True)
 
     def row_label(entry: dict) -> str:
@@ -412,7 +414,7 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
     result = {"plan": None}
     state = {"plan": build_plan(None)}
 
-    tk.Label(dialog, text=f"File: {file_name}", font=("Arial", 10, "bold"), wraplength=520, justify="left").pack(
+    tk.Label(dialog, text=f"File: {file_name}", font=theme.H3, wraplength=px(520), justify="left").pack(
         anchor="w", padx=12, pady=(10, 4)
     )
 
@@ -423,15 +425,15 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
     key_combo.current(state["plan"].key_index)
     key_combo.pack(side="left", padx=6)
 
-    match_label = tk.Label(dialog, anchor="w", font=("Arial", 9))
+    match_label = tk.Label(dialog, anchor="w", font=("Segoe UI", 9))
     match_label.pack(fill="x", padx=12)
 
     tk.Label(
-        dialog, text="Columns to import as attributes:", font=("Arial", 9, "bold"), anchor="w",
+        dialog, text="Columns to import as attributes:", font=("Segoe UI", 9, "bold"), anchor="w",
     ).pack(fill="x", padx=12, pady=(8, 2))
 
     # Scrollable grid of columns: a sheet can have dozens of them.
-    list_outer = tk.Frame(dialog, bd=1, relief="sunken")
+    list_outer = tk.Frame(dialog, bd=0, highlightthickness=1, highlightbackground=theme.BORDER)
     list_outer.pack(fill="both", expand=True, padx=12, pady=4)
     canvas = tk.Canvas(list_outer, highlightthickness=0, height=280, width=500)
     scrollbar = ttk.Scrollbar(list_outer, orient="vertical", command=canvas.yview)
@@ -454,9 +456,9 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
             child.destroy()
         row_vars.clear()
 
-        tk.Label(rows_frame, text="Import", font=("Arial", 9, "bold")).grid(row=0, column=0, padx=4, sticky="w")
-        tk.Label(rows_frame, text="Column / field", font=("Arial", 9, "bold")).grid(row=0, column=1, padx=4, sticky="w")
-        tk.Label(rows_frame, text="Type", font=("Arial", 9, "bold")).grid(row=0, column=2, padx=4, sticky="w")
+        tk.Label(rows_frame, text="Import", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, padx=4, sticky="w")
+        tk.Label(rows_frame, text="Column / field", font=("Segoe UI", 9, "bold")).grid(row=0, column=1, padx=4, sticky="w")
+        tk.Label(rows_frame, text="Type", font=("Segoe UI", 9, "bold")).grid(row=0, column=2, padx=4, sticky="w")
 
         for i, col in enumerate(state["plan"].columns, start=1):
             include_var = tk.BooleanVar(value=col.include)
@@ -465,7 +467,7 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
 
             check = tk.Checkbutton(rows_frame, variable=include_var)
             check.grid(row=i, column=0, padx=4)
-            tk.Label(rows_frame, text=col.header, anchor="w", wraplength=280, justify="left").grid(
+            tk.Label(rows_frame, text=col.header, anchor="w", wraplength=px(280), justify="left").grid(
                 row=i, column=1, padx=4, sticky="w"
             )
             if col.existing:
@@ -473,9 +475,9 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
                 if col.type == "computed":
                     note = "computed (can't import)"
                     check.config(state="disabled")
-                tk.Label(rows_frame, text=note, fg="gray", anchor="w").grid(row=i, column=2, padx=4, sticky="w")
+                tk.Label(rows_frame, text=note, fg=theme.SUBTLE, anchor="w").grid(row=i, column=2, padx=4, sticky="w")
             elif col.type == "computed":
-                tk.Label(rows_frame, text="computed (formula from file)", fg="gray", anchor="w").grid(
+                tk.Label(rows_frame, text="computed (formula from file)", fg=theme.SUBTLE, anchor="w").grid(
                     row=i, column=2, padx=4, sticky="w"
                 )
             else:
@@ -484,7 +486,7 @@ def import_attributes_dialog(parent, file_name: str, headers: list[str], build_p
                 ).grid(row=i, column=2, padx=4, pady=1, sticky="w")
 
         matched, total = count_matches(state["plan"].key_index)
-        color = "dark green" if matched == total else ("dark orange" if matched else "red")
+        color = theme.SUCCESS if matched == total else ("dark orange" if matched else "red")
         match_label.config(text=f"{matched} of {total} rows match a document in this project.", fg=color)
         canvas.yview_moveto(0)
 

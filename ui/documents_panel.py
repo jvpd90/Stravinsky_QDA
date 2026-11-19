@@ -7,6 +7,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 from pathlib import Path
 
+from . import theme
+from .scaling import px
 from .. import attribute_io
 from ..extraction import extract_text_for
 from . import dialogs, widgets
@@ -32,17 +34,17 @@ class DocumentsPanel:
 
         button_frame = tk.Frame(self.frame)
         button_frame.grid(row=0, column=0, sticky="ew", pady=2)
-        tk.Button(button_frame, text="Add File", command=self.add_document).pack(side="left", fill="x", expand=True, padx=(0, 2))
+        theme.primary(tk.Button(button_frame, text="Add File", command=self.add_document)).pack(side="left", fill="x", expand=True, padx=(0, 2))
         tk.Button(button_frame, text="Documents", command=self.show_documents_window).pack(side="left", fill="x", expand=True, padx=2)
         tk.Button(button_frame, text="Manage Attributes", command=self.manage_document_schema).pack(side="left", fill="x", expand=True, padx=(2, 0))
 
         # Documents above Fragments, split by a draggable divider (the
         # position is saved with the window layout, see QDAApp).
-        self.split = tk.PanedWindow(self.frame, orient="vertical", sashwidth=6, sashrelief="raised", bd=0)
+        self.split = tk.PanedWindow(self.frame, orient="vertical", sashwidth=px(8), bd=0)
         self.split.grid(row=1, column=0, sticky="nsew")
 
         doc_section = tk.Frame(self.split)
-        tk.Label(doc_section, text="Documents", font=("Arial", 11, "bold")).pack(fill="x", pady=(5, 2))
+        tk.Label(doc_section, text="Documents", font=theme.H2, anchor="w").pack(fill="x", pady=(5, 2))
         doc_frame = tk.Frame(doc_section)
         doc_frame.pack(fill="both", expand=True, pady=2)
 
@@ -53,8 +55,8 @@ class DocumentsPanel:
         self.tree.bind("<Button-3>", lambda e: self.on_right_click(e, self.tree))
 
         frag_section = tk.Frame(self.split)
-        tk.Label(frag_section, text="Fragments", font=("Arial", 11, "bold")).pack(fill="x", pady=(5, 2))
-        self.frag_list = tk.Listbox(frag_section, font=("Arial", 9))
+        tk.Label(frag_section, text="Fragments", font=theme.H2, anchor="w").pack(fill="x", pady=(5, 2))
+        self.frag_list = tk.Listbox(frag_section, font=("Segoe UI", 9))
         self.frag_list.pack(fill="both", expand=True, pady=2)
 
         self.split.add(doc_section, minsize=80, stretch="always")
