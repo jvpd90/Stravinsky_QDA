@@ -1,3 +1,27 @@
-Voltar para pasta acima, e executar este comando:
+COMO GERAR O STRAVINSKY PARA DISTRIBUIR
+=======================================
 
-pyinstaller -y --workpath "C:\Builds\QDA_Claude_work" --distpath "C:\Builds\QDA_Claude_dist" QDA_Claude.spec
+Tudo é feito por um só comando, na pasta do projeto:
+
+    build.bat            (ou:  .\build.ps1)
+
+Gera, em C:\Builds\Stravinsky\release\ :
+  - Stravinsky-Setup-<versão>.exe     instalador (por utilizador, sem administrador)
+  - Stravinsky-<versão>-portable.zip  versão portátil (descompactar e abrir Stravinsky.exe)
+
+O instalador precisa do Inno Setup 6:  winget install JRSoftware.InnoSetup
+Sem ele, gera-se só o zip portátil.
+
+A versão está em version.py.
+
+PUBLICAR UMA VERSÃO NO GITHUB
+-----------------------------
+1. Atualizar __version__ em version.py (ex.: "1.1.0") e fazer commit.
+2. git tag v1.1.0
+3. git push origin main v1.1.0
+O GitHub constrói o instalador e o zip e publica-os em "Releases"
+(.github/workflows/release.yml). Não é preciso construir localmente.
+
+Ficheiros: packaging\stravinsky.spec (PyInstaller), packaging\installer.iss
+(Inno Setup), packaging\launcher.py (arranque do .exe).
+Registo de erros da app instalada: %LOCALAPPDATA%\Stravinsky\stravinsky.log

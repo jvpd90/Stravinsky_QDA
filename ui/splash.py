@@ -15,8 +15,8 @@ import tkinter as tk
 from pathlib import Path
 
 from .scaling import px
+from ..version import APP_NAME, __version__
 
-APP_NAME = "Stravinsky"
 APP_SUBTITLE = "Qualitative Data Analysis"
 
 # Sizes are designed at 100% display scale; px() adapts them to the current one.
@@ -46,17 +46,17 @@ FADE_SECONDS = 0.2
 
 
 def _assets_dir() -> Path:
-    # Inside a PyInstaller bundle, data files live under sys._MEIPASS.
+    # Next to the package's modules, both from source and in the packaged app
+    # (packaging/stravinsky.spec bundles them there); sys._MEIPASS/assets is
+    # a fallback for older bundles.
+    candidates = [Path(__file__).resolve().parent.parent / "assets"]
     base = getattr(sys, "_MEIPASS", None)
     if base:
-        candidates = [Path(base) / "assets", Path(base) / "QDA_Claude" / "assets"]
-    else:
-        candidates = []
-    candidates.append(Path(__file__).resolve().parent.parent / "assets")
+        candidates.append(Path(base) / "assets")
     for path in candidates:
         if path.is_dir():
             return path
-    return candidates[-1]
+    return candidates[0]
 
 
 SPLASH_IMAGE = _assets_dir() / "splash.png"
@@ -126,6 +126,8 @@ class Splash(tk.Tk):
                                   capstyle="round", state="hidden")
         self._status = c.create_text(TEXT_X + px(1), BAR_Y + px(22), text="Starting…", anchor="w",
                                      fill=SUBTLE, font=(FONT, 9))
+        c.create_text(WIDTH - px(16), HEIGHT - px(14), text=f"v{__version__}", anchor="e",
+                      fill=SUBTLE, font=(FONT, 8))
 
         self._started = time.monotonic()
         self._faded_in = False

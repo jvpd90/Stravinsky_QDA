@@ -8,7 +8,7 @@ enable_dpi_awareness()  # before any window exists, so Tk renders crisply
 
 from .ui.splash import Splash  # noqa: E402
 
-MIN_SPLASH_SECONDS = 10 # keep the splash visible at least this long
+MIN_SPLASH_SECONDS = 5 # keep the splash visible at least this long
 
 
 def main():

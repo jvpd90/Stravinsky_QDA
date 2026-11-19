@@ -1,0 +1,76 @@
+# Builds the installer and the portable zip on a GitHub Windows machine and
+# publishes them as a GitHub Release.
+#
+# To release: bump __version__ in version.py, commit, then
+#     git tag v1.0.0
+#     git push origin v1.0.0
+# The tag must match version.py. "Run workflow" (manual) builds without
+# publishing; the files are then downloadable from the run's page.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The package is imported as Stravinsky_QDA, so it must be checked
+          # out into a folder of that name (the repository's name differs).
+          path: Stravinsky_QDA
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            Stravinsky_QDA/requirements.txt
+            Stravinsky_QDA/packaging/requirements-build.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r Stravinsky_QDA/requirements.txt -r Stravinsky_QDA/packaging/requirements-build.txt
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Check the tag matches version.py
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $text = Get-Content Stravinsky_QDA/version.py -Raw
+          if ($text -notmatch '__version__\s*=\s*"([^"]+)"') { throw "No __version__ in version.py" }
+          if ("v$($Matches[1])" -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match version.py ($($Matches[1]))"
+          }
+
+      - name: Build
+        shell: pwsh
+        run: ./Stravinsky_QDA/build.ps1 -OutDir "$env:RUNNER_TEMP\build" -Python python
+
+      - name: Keep the files on the run's page
+        uses: actions/upload-artifact@v4
+        with:
+          name: stravinsky-${{ github.ref_name }}
+          path: ${{ runner.temp }}/build/release/*
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Stravinsky ${{ github.ref_name }}
+          files: ${{ runner.temp }}/build/release/*
+          generate_release_notes: true
+          body: |
+            ## Instalar
+            - **Stravinsky-Setup-…exe** — instalador (recomendado). Não precisa de permissões de administrador.
+            - **Stravinsky-…-portable.zip** — versão portátil: descompactar e abrir `Stravinsky.exe`.
+
+            Na primeira execução o Windows pode mostrar "O Windows protegeu o computador":
+            clique em **Mais informações → Executar mesmo assim** (o instalador ainda não tem assinatura digital).

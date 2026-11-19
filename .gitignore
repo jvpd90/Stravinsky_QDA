@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Build output (build.ps1 writes to C:\Builds\Stravinsky by default)
+build/
+dist/
+*.zip
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
