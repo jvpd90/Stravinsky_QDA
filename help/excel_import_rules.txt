@@ -46,6 +46,14 @@ put in the order of the sheet. Levels not listed are left as they are.
 
 Column order after Fragment ID and Document doesn't matter.
 
+Sheet "Codings": the same fragments for ANALYSIS in Excel (filters,
+pivot tables, COUNTIFS), ONE LABEL PER CELL and one row per
+codification. A fragment coded "Theme A > a1", "Theme B > b1" and
+"Positive" (independent level) has two rows: (Theme A, a1, Positive)
+and (Theme B, b1, Positive) -- never the cross pairs (Theme A, b1).
+Count distinct Fragment IDs, not rows, to count fragments. The imports
+IGNORE this sheet: make your edits in "Fragments".
+
 
 2. WHAT YOU CAN DO IN THE WORKBOOK
 ----------------------------------

@@ -115,7 +115,10 @@ through the fragments workbook below.
 
 The fragments export has one row per fragment -- `Fragment ID | Document
 | <one column per level> | Fragment Text | Memo | <attributes>` -- plus a
-`Levels` sheet. Importing it back syncs the project by Fragment ID: level,
+`Levels` sheet and a read-only `Codings` sheet: the same columns in long
+form, one label per cell and one row per codification path (a label with
+its own parents, crossed with the independent levels), for filtering and
+pivot tables in Excel. Importing it back syncs the project by Fragment ID: level,
 memo and attribute cells replace the fragment's values, a deleted row
 deletes the fragment, new levels come from the `Levels` sheet, and
 fragment text is never changed. *Append New Fragments* adds the rows

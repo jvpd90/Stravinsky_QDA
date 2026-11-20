@@ -10,6 +10,7 @@ with the import behavior here.
 from __future__ import annotations
 
 import copy
+import itertools
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,7 +32,8 @@ from .storage import ProjectStore
 #   Fragment ID | Document | <one column per codebook level> | Fragment Text | Memo | <fragment attributes>
 # A level column is headed by the level's name and lists the fragment's
 # labels on that level. Any column that isn't fixed or a level is a
-# fragment attribute.
+# fragment attribute. The export also writes a "Codings" sheet, the same
+# columns one label per cell (build_coding_rows), which the imports ignore.
 FRAGMENT_ID_HEADER = "Fragment ID"
 DOCUMENT_HEADER = "Document"
 TEXT_HEADER = "Fragment Text"
@@ -103,26 +105,77 @@ def build_fragment_rows(store: ProjectStore) -> tuple[list[str], list[list[str]]
     return headers, rows
 
 
+CODINGS_SHEET = "Codings"
+
+
+def build_coding_rows(store: ProjectStore) -> tuple[list[str], list[list[str]]]:
+    """(headers, rows) for the Codings sheet: the Fragments layout in long
+    ("tidy") form, ONE LABEL PER CELL, one row per codification of a
+    fragment -- what filters, pivot tables and COUNTIFS need.
+
+    Each of the fragment's most specific labels gives a path down its
+    hierarchy of levels ("Tema A" › "Subtema A1"), so a row never pairs a
+    label with another branch's parent. Independent hierarchies are
+    crossed: a fragment coded A › A1, B › B1 and "Positivo" on an
+    independent Sentiment level gives (A, A1, Positivo) and (B, B1,
+    Positivo). An uncoded fragment still gets one row, with empty level
+    cells. Count distinct Fragment IDs, not rows, for fragment counts."""
+    levels = [level for level, _ in store.ordered_levels()]
+    level_ids = {lv["id"] for lv in levels}
+    top_of = {lv["id"]: (store.level_ancestors(lv) or [lv])[-1]["id"] for lv in levels}
+    hierarchy_order = list(dict.fromkeys(top_of[lv["id"]] for lv in levels))
+    headers, wide_rows = build_fragment_rows(store)
+    first_level_col = 2  # after Fragment ID, Document (see build_fragment_rows)
+
+    rows = []
+    for wide in wide_rows:
+        paths_by_hierarchy: dict[str, list[dict[str, str]]] = {}
+        for leaf in store.leaf_labels_for_fragment(wide[0]):
+            path = {
+                c["level_id"]: c["name"]
+                for c in [leaf] + store.label_ancestors(leaf) if c.get("level_id") in level_ids
+            }
+            if path:
+                paths = paths_by_hierarchy.setdefault(top_of[next(iter(path))], [])
+                if path not in paths:
+                    paths.append(path)
+        choices = [paths_by_hierarchy.get(h) or [{}] for h in hierarchy_order]
+        for combo in itertools.product(*choices):
+            names = {k: v for path in combo for k, v in path.items()}
+            rows.append(
+                wide[:first_level_col]
+                + [names.get(lv["id"], "") for lv in levels]
+                + wide[first_level_col + len(levels):]
+            )
+    return headers, rows
+
+
+def _write_fragment_sheet(ws, headers: list[str], rows: list[list[str]]) -> None:
+    ws.append(headers)
+    style_header_row(ws)
+    widths = {FRAGMENT_ID_HEADER: 16, DOCUMENT_HEADER: 25, TEXT_HEADER: 60, MEMO_HEADER: 40}
+    for i, header in enumerate(headers, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = widths.get(header, 22)
+    for row in rows:
+        ws.append([excel_safe(str(v)) for v in row])
+    style_body_cells(ws)
+    for row_idx in range(2, ws.max_row + 1):
+        ws.row_dimensions[row_idx].height = 80
+    ws.auto_filter.ref = ws.dimensions
+    ws.freeze_panes = "A2"
+
+
 def export_to_excel(store: ProjectStore, file_path: Path) -> None:
     """Write fragments + document attributes to an .xlsx file."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Fragments"
 
-    headers, rows = build_fragment_rows(store)
-    ws.append(headers)
-    style_header_row(ws)
-    widths = {FRAGMENT_ID_HEADER: 16, DOCUMENT_HEADER: 25, TEXT_HEADER: 60, MEMO_HEADER: 40}
-    for i, header in enumerate(headers, start=1):
-        ws.column_dimensions[get_column_letter(i)].width = widths.get(header, 22)
-
-    for row in rows:
-        ws.append([excel_safe(str(v)) for v in row])
-
-    style_body_cells(ws)
-    for row_idx in range(2, ws.max_row + 1):
-        ws.row_dimensions[row_idx].height = 80
-    ws.auto_filter.ref = ws.dimensions
+    # Fragments: one row per fragment, the sheet the imports read back.
+    # Codings: the same data one label per cell, for analysis in Excel;
+    # the imports ignore it.
+    _write_fragment_sheet(ws, *build_fragment_rows(store))
+    _write_fragment_sheet(wb.create_sheet(CODINGS_SHEET), *build_coding_rows(store))
 
     write_attribute_sheets(wb, store, store.documents)
     write_levels_sheet(wb, store)
