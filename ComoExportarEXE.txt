@@ -16,11 +16,19 @@ A versão está em version.py.
 
 PUBLICAR UMA VERSÃO NO GITHUB
 -----------------------------
-1. Atualizar __version__ em version.py (ex.: "1.1.0") e fazer commit.
-2. git tag v1.1.0
-3. git push origin main v1.1.0
-O GitHub constrói o instalador e o zip e publica-os em "Releases"
-(.github/workflows/release.yml). Não é preciso construir localmente.
+1. Fazer commit de todo o trabalho (git status sem alterações).
+2. Executar, com o número da nova versão:
+
+       release.bat 1.0.3
+
+   O script verifica se há trabalho de outro computador por trazer
+   (git pull), corre os testes, atualiza version.py, faz commit, cria a
+   tag v1.0.3 e envia tudo para o GitHub.
+3. O GitHub constrói o instalador e o zip e publica-os em "Releases"
+   (10-15 min): https://github.com/jvpd90/Stravinsky_QDA/releases
+
+Não criar a tag à mão: a tag e version.py têm de ter o mesmo número,
+senão o GitHub recusa construir a versão.
 
 Ficheiros: packaging\stravinsky.spec (PyInstaller), packaging\installer.iss
 (Inno Setup), packaging\launcher.py (arranque do .exe).

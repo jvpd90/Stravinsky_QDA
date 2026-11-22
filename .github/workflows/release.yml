@@ -20,13 +20,13 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # The package is imported as Stravinsky_QDA, so it must be checked
           # out into a folder of that name (the repository's name differs).
           path: Stravinsky_QDA
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           # Pinned to the exact Python the app is developed and tested with:
           # later 3.14 patch releases bundle Tcl/Tk 9, which behaves differently
@@ -50,7 +50,7 @@ jobs:
           $text = Get-Content Stravinsky_QDA/version.py -Raw
           if ($text -notmatch '__version__\s*=\s*"([^"]+)"') { throw "No __version__ in version.py" }
           if ("v$($Matches[1])" -ne "${{ github.ref_name }}") {
-            throw "Tag ${{ github.ref_name }} does not match version.py ($($Matches[1]))"
+            throw "Tag ${{ github.ref_name }} does not match version.py ($($Matches[1])). Use release.bat <version>, which sets both together."
           }
 
       - name: Build
